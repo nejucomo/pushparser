@@ -4,4 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+either = "1.13.0"
+extension-traits = "2.0.0"
 thiserror = "2.0.6"
+
+[dev-dependencies]
+test-case = "3.3.1"

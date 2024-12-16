@@ -1,9 +1,14 @@
 use std::io::Read;
 
+use either::Either;
+
 use crate::{ParseError, ParseResult, ParserCore};
 
 pub trait ReadParser: ParserCore<[u8]> {
-    fn read_parse<R, E>(self, r: R) -> ParseResult<Self::Output, Self::Error>
+    fn read_parse<R, E>(
+        self,
+        r: R,
+    ) -> ParseResult<Self::Output, Either<Self::Error, std::io::Error>>
     where
         R: Read,
     {
@@ -16,7 +21,7 @@ pub trait ReadParser: ParserCore<[u8]> {
         self,
         r: R,
         bufsize: usize,
-    ) -> ParseResult<Self::Output, Self::Error>
+    ) -> ParseResult<Self::Output, Either<Self::Error, std::io::Error>>
     where
         R: Read;
 }
@@ -24,17 +29,17 @@ pub trait ReadParser: ParserCore<[u8]> {
 impl<T> ReadParser for T
 where
     T: ParserCore<[u8]>,
-    T::Error: From<std::io::Error>,
 {
     fn read_parse_with_bufsize<R, E>(
         self,
         mut r: R,
         bufsize: usize,
-    ) -> ParseResult<Self::Output, Self::Error>
+    ) -> ParseResult<Self::Output, Either<Self::Error, std::io::Error>>
     where
         R: Read,
     {
-        use crate::Update::*;
+        use crate::{ParseResultExt, Update::*};
+        use Either::*;
         use ParseError::*;
 
         let mut parser = self;
@@ -42,12 +47,12 @@ where
         let mut heapbuf = vec![0u8; bufsize];
         let buf = heapbuf.as_mut_slice();
 
-        let mut bytes_read = r.read(buf).map_err(Self::Error::from)?;
+        let mut bytes_read = r.read(buf).map_err(Right)?;
         while bytes_read > 0 {
-            match parser.feed(&buf[..bytes_read])? {
+            match parser.feed(&buf[..bytes_read]).map_err_custom(Left)? {
                 Pending(next) => {
                     parser = next;
-                    bytes_read = r.read(buf).map_err(Self::Error::from)?;
+                    bytes_read = r.read(buf).map_err(Right)?;
                 }
                 Parsed(item, remaining) => {
                     return if remaining.is_empty() {
@@ -59,7 +64,7 @@ where
             }
         }
 
-        if let Some(output) = parser.finalize()? {
+        if let Some(output) = parser.finalize().map_err_custom(Left)? {
             Ok(output)
         } else {
             Err(ExpectedMoreInput)

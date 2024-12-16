@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum Update<S, X, B> {
     /// All input was consumed, but the parser has not completed a full item
     Pending(S),

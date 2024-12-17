@@ -3,7 +3,8 @@ use std::{borrow::Cow, convert::Infallible};
 use test_case::test_case;
 
 use crate::{
-    CmpPrefix, Literal,
+    buffer::SplitBuffer,
+    Literal,
     ParseError::UnexpectedInput,
     ParseResult, ParserCore,
     Update::{self, Parsed, Pending},
@@ -38,7 +39,7 @@ fn parse_literal<'a, B>(
     input: &'a B,
 ) -> ParseResult<Update<Literal<'a, B>, &'a B, Cow<'a, B>>, Infallible>
 where
-    B: ?Sized + ToOwned + CmpPrefix,
+    B: ?Sized + SplitBuffer,
 {
     Literal::from(literal).feed(input)
 }

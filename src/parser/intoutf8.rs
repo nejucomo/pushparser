@@ -2,7 +2,8 @@ use std::{borrow::Cow, str::Utf8Error};
 
 use either::Either;
 
-use crate::{ParseResult, ParseResultExt, ParserCore, Update};
+use crate::error::{ParseResult, ParseResultExt};
+use crate::parser::{ParserCore, Update};
 
 /// Wrap any [str] parser into a UTF-8 `[u8]` parser
 #[derive(Debug)]
@@ -80,7 +81,7 @@ where
     }
 
     fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
-        use crate::ParseError::ExpectedMoreInput;
+        use crate::error::ParseError::ExpectedMoreInput;
         use Either::Left;
 
         if self.straddlebuf.is_empty() {

@@ -2,7 +2,9 @@ use std::io::Read;
 
 use either::Either;
 
-use crate::{ParseError, ParseResult, ParserCore};
+use crate::error::ParseError::{ExpectedMoreInput, UnexpectedInput};
+use crate::error::{ParseResult, ParseResultExt};
+use crate::parser::ParserCore;
 
 pub trait ReadParser: ParserCore<[u8]> {
     fn read_parse<R, E>(
@@ -38,9 +40,8 @@ where
     where
         R: Read,
     {
-        use crate::{ParseResultExt, Update::*};
+        use crate::parser::Update::*;
         use Either::*;
-        use ParseError::*;
 
         let mut parser = self;
 

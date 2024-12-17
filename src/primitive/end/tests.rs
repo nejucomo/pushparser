@@ -1,7 +1,7 @@
 use test_case::test_case;
 
+use crate::parser::ParserCore;
 use crate::primitive::end;
-use crate::ParserCore;
 
 #[test_case("" => true)]
 #[test_case("foo" => false)]

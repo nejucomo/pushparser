@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
-use crate::{ParseResult, Update};
+use crate::error::ParseResult;
+use crate::parser::Update;
 
 /// The core parser functionality which must be implemented for new parsers
 pub trait ParserCore<B>: Sized

@@ -1,6 +1,13 @@
 use std::{borrow::Cow, convert::Infallible};
 
-use crate::{buffer::SplitBuffer, ParseError, ParseResult, ParserCore, Update};
+use crate::error::ParseError::{ExpectedMoreInput, UnexpectedInput};
+use crate::error::ParseResult;
+use crate::parser::Update;
+use crate::{buffer::SplitBuffer, parser::ParserCore};
+
+pub fn literal<B>(value: &B) -> Literal<'_, B> {
+    Literal::from(value)
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct Literal<'s, B>
@@ -52,12 +59,12 @@ where
                 Ok(Pending(self))
             }
         } else {
-            Err(ParseError::UnexpectedInput)
+            Err(UnexpectedInput)
         }
     }
 
     fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
-        todo!()
+        Err(ExpectedMoreInput)
     }
 }
 

@@ -1,11 +1,8 @@
 use std::{borrow::Cow, convert::Infallible};
 
-use crate::{
-    buffer::Buffer,
-    ParseError::UnexpectedInput,
-    ParseResult, ParserCore,
-    Update::{self, Pending},
-};
+use crate::error::{ParseError::UnexpectedInput, ParseResult};
+use crate::parser::Update::{self, Pending};
+use crate::{buffer::Buffer, parser::ParserCore};
 
 pub fn end() -> End {
     End

@@ -2,7 +2,9 @@ use std::convert::Infallible;
 
 use test_case::test_case;
 
-use crate::{Literal, ParseResult, ParseResultExt, ReadParser, Utf8Parser};
+use crate::error::{ParseResult, ParseResultExt};
+use crate::parser::{ReadParser, TextParser};
+use crate::primitive::Literal;
 
 const STRING_WITH_EMOJI: &str = "Hello 🌏! Nice to meet you.";
 

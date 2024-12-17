@@ -2,13 +2,12 @@ use std::{borrow::Cow, convert::Infallible};
 
 use test_case::test_case;
 
-use crate::{
-    buffer::SplitBuffer,
-    Literal,
-    ParseError::UnexpectedInput,
-    ParseResult, ParserCore,
-    Update::{self, Parsed, Pending},
-};
+use crate::buffer::SplitBuffer;
+use crate::error::ParseError::UnexpectedInput;
+use crate::error::ParseResult;
+use crate::parser::ParserCore;
+use crate::parser::Update::{self, Parsed, Pending};
+use crate::primitive::Literal;
 
 #[test_case(
     "Hello",

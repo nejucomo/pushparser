@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use std::{borrow::Cow, convert::Infallible};
 
 use test_case::test_case;
 
@@ -12,7 +12,7 @@ use crate::{
 #[test_case(
     "Hello",
     "Hello World!"
-    => matches Ok(Parsed("Hello", " World!"))
+    => matches Ok(Parsed("Hello", Cow::Borrowed(" World!")))
     ; "str_hello_world_prefix_hello"
 )]
 #[test_case(
@@ -36,9 +36,9 @@ use crate::{
 fn parse_literal<'a, B>(
     literal: &'a B,
     input: &'a B,
-) -> ParseResult<Update<Literal<'a, B>, &'a B, &'a B>, Infallible>
+) -> ParseResult<Update<Literal<'a, B>, &'a B, Cow<'a, B>>, Infallible>
 where
-    B: ?Sized + CmpPrefix,
+    B: ?Sized + ToOwned + CmpPrefix,
 {
     Literal::from(literal).feed(input)
 }

@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use std::{borrow::Cow, convert::Infallible};
 
 use crate::{ParseError, ParseResult, ParserCore, Update};
 
@@ -22,12 +22,16 @@ where
 
 impl<'s, B> ParserCore<B> for Literal<'s, B>
 where
-    B: ?Sized + CmpPrefix,
+    B: ?Sized + ToOwned + CmpPrefix,
 {
     type Output = &'s B;
     type Error = Infallible;
 
-    fn feed(mut self, buffer: &B) -> ParseResult<Update<Self, Self::Output, &B>, Self::Error> {
+    fn feed(
+        mut self,
+        buffer: &B,
+    ) -> ParseResult<Update<Self, Self::Output, Cow<'_, B>>, Self::Error> {
+        use Cow::Borrowed;
         use Update::*;
 
         let (_, tomatch) = self.value.split_at(self.matchcnt);
@@ -39,7 +43,7 @@ where
         if bufprefix == litprefix {
             if litsuffix.is_empty() {
                 // We've reached the end of a match:
-                Ok(Parsed(self.value, bufsuffix))
+                Ok(Parsed(self.value, Borrowed(bufsuffix)))
             } else {
                 // We haven't seen enough bytes to compare litprefix:
                 assert!(bufsuffix.is_empty());

@@ -1,3 +1,4 @@
+//! Traits for parser implementors and consumers
 mod core;
 mod intoutf8;
 mod read;

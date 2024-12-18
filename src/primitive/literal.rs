@@ -5,10 +5,12 @@ use crate::error::ParseResult;
 use crate::parser::Update;
 use crate::{buffer::SplitBuffer, parser::ParserCore};
 
+/// Construct a [Literal] which parses input which exactly matches its value
 pub fn literal<B>(value: &B) -> Literal<'_, B> {
     Literal::from(value)
 }
 
+/// A [Literal] parses input which exactly matches its value
 #[derive(Copy, Clone, Debug)]
 pub struct Literal<'s, B>
 where

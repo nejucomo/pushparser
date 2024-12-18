@@ -6,7 +6,11 @@ use crate::error::ParseError::{ExpectedMoreInput, UnexpectedInput};
 use crate::error::{ParseResult, ParseResultExt};
 use crate::parser::ParserCore;
 
+/// A consumer interface that can parse any sync I/O [std::io::Read] type
+///
+/// Any [ParserCore] with `[u8]` input is a [ReadParser] by blanket impl.
 pub trait ReadParser: ParserCore<[u8]> {
+    /// Read `r` to end of file and parse it using a buffer with a default size
     fn read_parse<R, E>(
         self,
         r: R,
@@ -19,6 +23,7 @@ pub trait ReadParser: ParserCore<[u8]> {
         self.read_parse_with_bufsize::<R, E>(r, BUFSIZE)
     }
 
+    /// Read `r` to end of file and parse it using a buffer with the allocated size
     fn read_parse_with_bufsize<R, E>(
         self,
         r: R,

@@ -1,3 +1,4 @@
+//! Primitive parsers which are frequently used as building blocks for parser composition
 mod end;
 mod literal;
 

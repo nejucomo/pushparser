@@ -1,4 +1,4 @@
-//! Traits to leverage different input data properties
+//! [Buffer] and other traits to leverage different input data properties
 mod sliceimpls;
 mod strimpls;
 

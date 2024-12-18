@@ -1,4 +1,4 @@
-//! Traits for parser implementors and consumers
+//! [PushParser] and other traits & types for parser implementors and consumers
 mod core;
 mod intoutf8;
 mod push;

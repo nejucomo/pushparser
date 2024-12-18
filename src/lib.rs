@@ -8,6 +8,7 @@
 #![deny(missing_docs)]
 
 pub mod buffer;
+pub mod combinator;
 pub mod error;
 pub mod parser;
 pub mod primitive;

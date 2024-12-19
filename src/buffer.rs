@@ -25,3 +25,12 @@ pub trait SplitBuffer: Buffer {
         suffix
     }
 }
+
+/// A [BacktrackBuffer] can be owned and extended
+pub trait BacktrackBuffer: Buffer
+where
+    Self::Owned: Default,
+{
+    /// Push `self` onto the back of `backtrack` storage
+    fn push_onto(&self, backtrack: &mut Self::Owned);
+}

@@ -1,9 +1,9 @@
-use std::{borrow::Cow, convert::Infallible};
+use std::convert::Infallible;
 
 use crate::error::ParseError::{ExpectedMoreInput, UnexpectedInput};
 use crate::error::ParseResult;
 use crate::parser::Update;
-use crate::{buffer::SplitBuffer, parser::ParserCore};
+use crate::{buffer::BufRef, parser::ParserCore};
 
 /// Construct a [Literal] which parses input which exactly matches its value
 pub fn literal<B>(value: &B) -> Literal<'_, B> {
@@ -31,34 +31,39 @@ where
 
 impl<'s, B> ParserCore<B> for Literal<'s, B>
 where
-    B: ?Sized + SplitBuffer,
+    B: ?Sized + BufRef,
 {
     type Output = &'s B;
     type Error = Infallible;
 
-    fn feed(
-        mut self,
-        buffer: &B,
-    ) -> ParseResult<Update<Self, Self::Output, Cow<'_, B>>, Self::Error> {
-        use Cow::Borrowed;
-        use Update::*;
+    fn feed(mut self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
+        use crate::parser::Outcome::{Next, Parsed};
 
         let (_, tomatch) = self.value.split_at(self.matchcnt);
 
-        let mid = std::cmp::min(tomatch.len(), buffer.len());
-        let (litprefix, litsuffix) = tomatch.split_at(mid);
-        let (bufprefix, bufsuffix) = buffer.split_at(mid);
+        let consumed = std::cmp::min(tomatch.len(), buffer.len());
+        let (litprefix, litsuffix) = tomatch.split_at(consumed);
+        let (bufprefix, bufsuffix) = buffer.split_at(consumed);
 
         if bufprefix == litprefix {
             if litsuffix.is_empty() {
                 // We've reached the end of a match:
-                Ok(Parsed(self.value, Borrowed(bufsuffix)))
+                Ok(Update {
+                    consumed,
+                    outcome: Parsed(self.value),
+                })
             } else {
-                // We haven't seen enough bytes to compare litprefix:
+                // We haven't seen enough bytes to compare litprefix.
+                // So we should have read the whole buffer:
                 assert!(bufsuffix.is_empty());
-                assert_eq!(bufprefix.len(), buffer.len());
-                self.matchcnt += buffer.len();
-                Ok(Pending(self))
+                let consumed = bufprefix.len();
+                assert_eq!(consumed, buffer.len());
+
+                self.matchcnt += consumed;
+                Ok(Update {
+                    consumed,
+                    outcome: Next(self),
+                })
             }
         } else {
             Err(UnexpectedInput)

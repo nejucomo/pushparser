@@ -1,6 +1,3 @@
-use std::fmt::Debug;
-
-use crate::buffer::BacktrackBuffer;
 use crate::combinator::{Or, Then};
 use crate::parser::ParserCore;
 
@@ -18,11 +15,9 @@ where
     }
 
     /// Parse either `self` or `alternative`, yielding `Either<Self::Output, P::Output>`
-    fn or<P>(self, alternative: P) -> Or<Self, P, B>
+    fn or<P>(self, alternative: P) -> Or<Self, P>
     where
         P: ParserCore<B>,
-        B: BacktrackBuffer,
-        B::Owned: Default + Debug,
     {
         Or::new(self, alternative)
     }

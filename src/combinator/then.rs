@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::marker::PhantomData;
 
 use either::Either;
@@ -12,9 +11,8 @@ pub struct Then<X, Y, B>
 where
     X: ParserCore<B>,
     Y: ParserCore<B>,
-    B: ToOwned,
 {
-    x: Either<X, X::Output>,
+    xporv: Either<X, X::Output>,
     y: Y,
     ph: PhantomData<B>,
 }
@@ -23,14 +21,13 @@ impl<X, Y, B> Then<X, Y, B>
 where
     X: ParserCore<B>,
     Y: ParserCore<B>,
-    B: ToOwned,
 {
     /// Create a sequential parser for `x` then `y`
     pub fn new(x: X, y: Y) -> Self {
         use Either::Left;
 
         Then {
-            x: Left(x),
+            xporv: Left(x),
             y,
             ph: PhantomData,
         }
@@ -41,44 +38,44 @@ impl<X, Y, B> ParserCore<B> for Then<X, Y, B>
 where
     X: ParserCore<B>,
     Y: ParserCore<B>,
-    B: ToOwned,
 {
     type Output = (X::Output, Y::Output);
     type Error = Either<X::Error, Y::Error>;
 
-    fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output, Cow<'_, B>>, Self::Error> {
-        use std::borrow::Borrow;
-        use Cow::{Borrowed, Owned};
+    fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
+        use crate::parser::Outcome::{Next, Parsed};
         use Either::{Left, Right};
-        use Update::{Parsed, Pending};
 
-        let Then { x, y, ph } = self;
+        let Then { xporv, y, ph } = self;
 
-        match x {
-            Left(xp) => match xp.feed(buffer).map_err_custom(Left)? {
-                Pending(xp) => Ok(Pending(Then { x: Left(xp), y, ph })),
-                Parsed(xout, Borrowed(xbuf)) => Then {
-                    x: Right(xout),
-                    y,
-                    ph,
-                }
-                .feed(xbuf),
-                Parsed(xout, Owned(xbuf)) => Then {
-                    x: Right(xout),
-                    y,
-                    ph,
-                }
-                .feed(xbuf.borrow())
-                .map_buffer(|cow| Owned(cow.into_owned())),
-            },
-            Right(xout) => match y.feed(buffer).map_err_custom(Right)? {
-                Pending(y) => Ok(Pending(Then {
-                    x: Right(xout),
-                    y,
-                    ph,
-                })),
-                Parsed(yout, ybuf) => Ok(Parsed((xout, yout), ybuf)),
-            },
+        match xporv {
+            Left(xparser) => xparser
+                .feed(buffer)
+                .map_err_custom(Left)
+                .map_outcome(|outcome| match outcome {
+                    Next(xparser) => Next(Then {
+                        xporv: Left(xparser),
+                        y,
+                        ph,
+                    }),
+                    Parsed(xout) => Next(Then {
+                        xporv: Right(xout),
+                        y,
+                        ph,
+                    }),
+                }),
+            Right(xout) => {
+                y.feed(buffer)
+                    .map_err_custom(Right)
+                    .map_outcome(|outcome| match outcome {
+                        Next(y) => Next(Then {
+                            xporv: Right(xout),
+                            y,
+                            ph,
+                        }),
+                        Parsed(yout) => Parsed((xout, yout)),
+                    })
+            }
         }
     }
 
@@ -86,9 +83,9 @@ where
         use crate::error::ParseError::ExpectedMoreInput;
         use Either::{Left, Right};
 
-        let Then { x, y, .. } = self;
+        let Then { xporv, y, .. } = self;
 
-        let xoutopt = match x {
+        let xoutopt = match xporv {
             Left(xp) => xp.finalize().map_err_custom(Left)?,
             Right(xout) => Some(xout),
         };

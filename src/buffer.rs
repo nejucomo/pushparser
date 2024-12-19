@@ -1,21 +1,25 @@
 //! [Buffer] and other traits to leverage different input data properties
+mod manager;
 mod sliceimpls;
 mod strimpls;
 
-/// [Buffer] values have a len of unspecified units and can be empty
+pub use self::manager::BufferManager;
+
+/// A [Buffer] provides storage for input to place pre-parsed data
+pub trait Buffer: AsRef<[u8]> + AsMut<[u8]> {}
+
+/// [BufRef] values have a len of unspecified units and can be empty
 ///
 /// Implementors of [ParserCore::feed](crate::parser::ParserCore::feed) should be aware to handle empty buffers.
-pub trait Buffer: PartialEq + ToOwned {
+pub trait BufRef: PartialEq {
     /// Whether the buffer contains no items
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
     /// The number of items in the buffer
     fn len(&self) -> usize;
-}
 
-/// A [SplitBuffer] can be split into a prefix and suffix at an offset.
-pub trait SplitBuffer: Buffer {
     /// Split the buffer at the given index which must be `<= self.len()`
     fn split_at(&self, mid: usize) -> (&Self, &Self);
 
@@ -24,13 +28,4 @@ pub trait SplitBuffer: Buffer {
         let (_, suffix) = self.split_at(mid);
         suffix
     }
-}
-
-/// A [BacktrackBuffer] can be owned and extended
-pub trait BacktrackBuffer: Buffer
-where
-    Self::Owned: Default,
-{
-    /// Push `self` onto the back of `backtrack` storage
-    fn push_onto(&self, backtrack: &mut Self::Owned);
 }

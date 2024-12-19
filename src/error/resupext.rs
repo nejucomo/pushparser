@@ -1,43 +1,44 @@
 use crate::error::{ParseResult, ParseResultExt};
-use crate::parser::Update;
+use crate::parser::{Outcome, Update};
 
 /// A trait with a [`ParseResult`]`<`[`Update`]`, ...>` impl which delegates to useful [Update] methods
-pub trait ParseResultUpdateExt<S, X, B, E>: ParseResultExt<Update<S, X, B>, E> {
+pub trait ParseResultUpdateExt<S, X, E>: ParseResultExt<Update<S, X>, E> {
     /// Map the pending state of an [Update]
-    fn map_pending<F, S2>(self, f: F) -> ParseResult<Update<S2, X, B>, E>
+    fn map_next<F, S2>(self, f: F) -> ParseResult<Update<S2, X>, E>
     where
         F: FnOnce(S) -> S2;
 
     /// Map the output of an [Update]
-    fn map_output<F, X2>(self, f: F) -> ParseResult<Update<S, X2, B>, E>
+    fn map_output<F, X2>(self, f: F) -> ParseResult<Update<S, X2>, E>
     where
         F: FnOnce(X) -> X2;
 
-    /// Map the buffer of an [Update]
-    fn map_buffer<F, B2>(self, f: F) -> ParseResult<Update<S, X, B2>, E>
+    /// Map the outcome of an [Update]
+    fn map_outcome<F, S2, X2>(self, f: F) -> ParseResult<Update<S2, X2>, E>
     where
-        F: FnOnce(B) -> B2;
+        F: FnOnce(Outcome<S, X>) -> Outcome<S2, X2>;
 }
 
-impl<S, X, B, E> ParseResultUpdateExt<S, X, B, E> for ParseResult<Update<S, X, B>, E> {
-    fn map_pending<F, S2>(self, f: F) -> ParseResult<Update<S2, X, B>, E>
+impl<S, X, E> ParseResultUpdateExt<S, X, E> for ParseResult<Update<S, X>, E> {
+    fn map_next<F, S2>(self, f: F) -> ParseResult<Update<S2, X>, E>
     where
         F: FnOnce(S) -> S2,
     {
-        self.map(|up| up.map_pending(f))
+        self.map(|up| up.map_next(f))
     }
 
-    fn map_output<F, X2>(self, f: F) -> ParseResult<Update<S, X2, B>, E>
+    fn map_output<F, X2>(self, f: F) -> ParseResult<Update<S, X2>, E>
     where
         F: FnOnce(X) -> X2,
     {
         self.map(|up| up.map_output(f))
     }
 
-    fn map_buffer<F, B2>(self, f: F) -> ParseResult<Update<S, X, B2>, E>
+    /// Map the outcome of an [Update]
+    fn map_outcome<F, S2, X2>(self, f: F) -> ParseResult<Update<S2, X2>, E>
     where
-        F: FnOnce(B) -> B2,
+        F: FnOnce(Outcome<S, X>) -> Outcome<S2, X2>,
     {
-        self.map(|up| up.map_buffer(f))
+        self.map(|up| up.map_outcome(f))
     }
 }

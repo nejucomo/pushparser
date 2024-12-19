@@ -1,8 +1,8 @@
-use std::{borrow::Cow, convert::Infallible};
+use std::convert::Infallible;
 
+use crate::buffer::BufRef;
 use crate::error::{ParseError::UnexpectedInput, ParseResult};
-use crate::parser::Update::{self, Pending};
-use crate::{buffer::Buffer, parser::ParserCore};
+use crate::parser::{ParserCore, Update};
 
 /// Construct the [End] parser, which only succeeds on an empty end of input
 pub fn end() -> End {
@@ -15,14 +15,19 @@ pub struct End;
 
 impl<B> ParserCore<B> for End
 where
-    B: ?Sized + Buffer,
+    B: ?Sized + BufRef,
 {
     type Output = End;
     type Error = Infallible;
 
-    fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output, Cow<'_, B>>, Self::Error> {
+    fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
+        use crate::parser::Outcome::Next;
+
         if buffer.is_empty() {
-            Ok(Pending(Self))
+            Ok(Update {
+                consumed: 0,
+                outcome: Next(Self),
+            })
         } else {
             Err(UnexpectedInput)
         }

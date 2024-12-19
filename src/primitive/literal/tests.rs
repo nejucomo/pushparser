@@ -1,18 +1,18 @@
-use std::{borrow::Cow, convert::Infallible};
+use std::convert::Infallible;
 
 use test_case::test_case;
 
-use crate::buffer::SplitBuffer;
+use crate::buffer::BufRef;
 use crate::error::ParseError::UnexpectedInput;
 use crate::error::ParseResult;
-use crate::parser::ParserCore;
-use crate::parser::Update::{self, Parsed, Pending};
+use crate::parser::Outcome::{Next, Parsed};
+use crate::parser::{ParserCore, Update};
 use crate::primitive::Literal;
 
 #[test_case(
     "Hello",
     "Hello World!"
-    => matches Ok(Parsed("Hello", Cow::Borrowed(" World!")))
+    => matches Ok(Update { consumed: 5, outcome: Parsed("Hello") })
     ; "str_hello_world_prefix_hello"
 )]
 #[test_case(
@@ -24,21 +24,21 @@ use crate::primitive::Literal;
 #[test_case(
     b"Hello".as_slice(),
     b"Hello World!".as_slice()
-    => matches Ok(Parsed(_, _))
+    => matches Ok(Update { consumed: 5, outcome: Parsed(_) })
     ; "bytes_hello_world_prefix_hello"
 )]
 #[test_case(
     "Hello",
     "Hell"
-    => matches Ok(Pending(_))
+    => matches Ok(Update { consumed: 4, outcome: Next(_) })
     ; "str_hell_prefix_hello"
 )]
 fn parse_literal<'a, B>(
     literal: &'a B,
     input: &'a B,
-) -> ParseResult<Update<Literal<'a, B>, &'a B, Cow<'a, B>>, Infallible>
+) -> ParseResult<Update<Literal<'a, B>, &'a B>, Infallible>
 where
-    B: ?Sized + SplitBuffer,
+    B: ?Sized + BufRef,
 {
     Literal::from(literal).feed(input)
 }

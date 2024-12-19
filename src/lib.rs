@@ -13,11 +13,8 @@ pub mod error;
 pub mod parser;
 pub mod primitive;
 
-pub use crate::error::ParseError;
-pub use crate::parser::{PushParser, Update};
-
 #[cfg(doc)]
-use crate::parser::{ParserCore, ReadParser};
+use crate::parser::{ParserCore, PushParser, ReadParser};
 
 #[cfg(test)]
 mod tests;

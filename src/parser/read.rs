@@ -2,8 +2,9 @@ use std::io::Read;
 
 use either::Either;
 
-use crate::error::ParseError::{ExpectedMoreInput, UnexpectedInput};
+use crate::buffer::BufferManager;
 use crate::error::{ParseResult, ParseResultExt};
+use crate::parser::Outcome::{Next, Parsed};
 use crate::parser::ParserCore;
 
 /// A consumer interface that can parse any sync I/O [std::io::Read] type
@@ -45,35 +46,22 @@ where
     where
         R: Read,
     {
-        use crate::parser::Update::*;
-        use Either::*;
+        use Either::{Left, Right};
 
         let mut parser = self;
+        let mut bufmgr = BufferManager::from(vec![0u8; bufsize]);
 
-        let mut heapbuf = vec![0u8; bufsize];
-        let buf = heapbuf.as_mut_slice();
-
-        let mut bytes_read = r.read(buf).map_err(Right)?;
-        while bytes_read > 0 {
-            match parser.feed(&buf[..bytes_read]).map_err_custom(Left)? {
-                Pending(next) => {
+        loop {
+            let writeslice = bufmgr.get_write_slice();
+            let readcnt = r.read(writeslice).map_err(Right)?;
+            match bufmgr.process_write(parser, readcnt).map_err_custom(Left)? {
+                Next(next) => {
                     parser = next;
-                    bytes_read = r.read(buf).map_err(Right)?;
                 }
-                Parsed(item, remaining) => {
-                    return if remaining.is_empty() {
-                        Ok(item)
-                    } else {
-                        Err(UnexpectedInput)
-                    };
+                Parsed(output) => {
+                    return Ok(output);
                 }
             }
-        }
-
-        if let Some(output) = parser.finalize().map_err_custom(Left)? {
-            Ok(output)
-        } else {
-            Err(ExpectedMoreInput)
         }
     }
 }

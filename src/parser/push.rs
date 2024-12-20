@@ -1,5 +1,5 @@
 use crate::buffer::BufRef;
-use crate::combinator::{Optional, Or, Repeated, Then};
+use crate::combinator::{MapOutput, Optional, Or, Repeated, Then};
 use crate::parser::ParserCore;
 
 /// The primary composition interface for push parsers
@@ -7,6 +7,14 @@ pub trait PushParser<B>: ParserCore<B>
 where
     B: ?Sized,
 {
+    /// Convert this output once parsed
+    fn map_output<F, O>(self, f: F) -> MapOutput<Self, F, O, B>
+    where
+        F: FnOnce(Self::Output) -> O,
+    {
+        MapOutput::new(self, f)
+    }
+
     /// Parse `self` then `next` in sequence, yielding `(Self::Output, P::Output)`
     fn then<P>(self, next: P) -> Then<Self, P, B>
     where

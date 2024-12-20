@@ -14,7 +14,7 @@ pub mod parser;
 pub mod primitive;
 
 #[cfg(doc)]
-use crate::parser::{ParserCore, PushParser, ReadParser};
+use crate::parser::{ParserCore, PushParser, ReadParser, Update};
 
 #[cfg(test)]
 mod tests;

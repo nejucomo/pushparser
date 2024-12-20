@@ -36,7 +36,9 @@ pub trait ReadParser: ParserCore<[u8]> {
 
 impl<T> ReadParser for T
 where
-    T: ParserCore<[u8]>,
+    T: ParserCore<[u8]> + std::fmt::Debug,
+    T::Output: std::fmt::Debug,
+    T::Error: std::fmt::Debug,
 {
     fn read_parse_with_bufsize<R, E>(
         self,

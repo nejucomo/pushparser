@@ -70,7 +70,8 @@ where
         }
     }
 
-    fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
+    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
+        assert!(buffer.is_empty());
         Err(ExpectedMoreInput)
     }
 }

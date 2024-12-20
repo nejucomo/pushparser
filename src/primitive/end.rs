@@ -23,18 +23,27 @@ where
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::Next;
 
-        if buffer.is_empty() {
-            Ok(Update {
-                consumed: 0,
-                outcome: Next(Self),
-            })
-        } else {
-            Err(UnexpectedInput)
-        }
+        check_empty(buffer)?;
+        Ok(Update {
+            consumed: 0,
+            outcome: Next(Self),
+        })
     }
 
-    fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
+    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
+        check_empty(buffer)?;
         Ok(Some(End))
+    }
+}
+
+fn check_empty<B, E>(buffer: &B) -> ParseResult<(), E>
+where
+    B: ?Sized + BufRef,
+{
+    if buffer.is_empty() {
+        Ok(())
+    } else {
+        Err(UnexpectedInput)
     }
 }
 

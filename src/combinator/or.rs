@@ -37,7 +37,7 @@ where
         let Or { xbt, y } = self;
 
         if let Some(xbt) = xbt {
-            if let Some(update) = xbt.feed(buffer).ok() {
+            if let Ok(update) = xbt.feed(buffer) {
                 return Ok(update
                     .map_next(|xbt| Or { xbt: Some(xbt), y })
                     .map_output(Left));
@@ -49,7 +49,14 @@ where
             .map_output(Right)
     }
 
-    fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
-        todo!()
+    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
+        let Or { xbt, y } = self;
+
+        if let Some(xbt) = xbt {
+            if let Ok(Some(output)) = xbt.finalize(buffer) {
+                return Ok(Some(Left(output)));
+            }
+        }
+        y.finalize(buffer).map(|optval| optval.map(Right))
     }
 }

@@ -27,8 +27,15 @@ where
         self.0.feed(s).map_next(IntoUtf8Parser).map_err_custom(Left)
     }
 
-    fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
-        self.0.finalize().map_err_custom(Left)
+    fn finalize(self, buffer: &[u8]) -> ParseResult<Option<Self::Output>, Self::Error> {
+        use crate::error::ParseError::ExpectedMoreInput;
+
+        let (s, noise) = from_utf8_partial(buffer).map_err(Right)?;
+        if noise.is_empty() {
+            self.0.finalize(s).map_err_custom(Left)
+        } else {
+            Err(ExpectedMoreInput)
+        }
     }
 }
 

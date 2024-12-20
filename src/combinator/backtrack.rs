@@ -44,7 +44,7 @@ where
         }
     }
 
-    fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
-        self.parser.finalize()
+    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
+        self.parser.finalize(buffer)
     }
 }

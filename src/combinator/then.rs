@@ -79,18 +79,18 @@ where
         }
     }
 
-    fn finalize(self) -> ParseResult<Option<Self::Output>, Self::Error> {
+    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
         use crate::error::ParseError::ExpectedMoreInput;
         use Either::{Left, Right};
 
         let Then { xporv, y, .. } = self;
 
         let xoutopt = match xporv {
-            Left(xp) => xp.finalize().map_err_custom(Left)?,
+            Left(xp) => xp.finalize(buffer).map_err_custom(Left)?,
             Right(xout) => Some(xout),
         };
 
-        let youtopt = y.finalize().map_err_custom(Right)?;
+        let youtopt = y.finalize(buffer).map_err_custom(Right)?;
 
         match (xoutopt, youtopt) {
             // Both finalize to a value, so we finalize to a value:

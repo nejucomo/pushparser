@@ -72,3 +72,6 @@ where
 {
     |optout| optout.map(|x| (Repeated::from(template), x))
 }
+
+#[cfg(test)]
+mod tests;

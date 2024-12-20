@@ -11,13 +11,25 @@ pub fn literal<B>(value: &B) -> Literal<'_, B> {
 }
 
 /// A [Literal] parses input which exactly matches its value
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Debug)]
 pub struct Literal<'s, B>
 where
     B: ?Sized,
 {
     value: &'s B,
     matchcnt: usize,
+}
+
+impl<B> Clone for Literal<'_, B>
+where
+    B: ?Sized,
+{
+    fn clone(&self) -> Self {
+        Literal {
+            value: self.value,
+            matchcnt: self.matchcnt,
+        }
+    }
 }
 
 impl<'s, B> From<&'s B> for Literal<'s, B>

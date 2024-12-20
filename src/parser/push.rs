@@ -1,5 +1,5 @@
 use crate::buffer::BufRef;
-use crate::combinator::{Optional, Or, Then};
+use crate::combinator::{Optional, Or, Repeated, Then};
 use crate::parser::ParserCore;
 
 /// The primary composition interface for push parsers
@@ -29,6 +29,14 @@ where
         B: BufRef,
     {
         Optional::from(self)
+    }
+
+    /// Parse `self` multiple times
+    fn repeated(self) -> Repeated<Self>
+    where
+        Self: Clone,
+    {
+        Repeated::from(self)
     }
 }
 

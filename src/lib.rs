@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![feature(extend_one)]
 
 pub mod buffer;
 pub mod combinator;

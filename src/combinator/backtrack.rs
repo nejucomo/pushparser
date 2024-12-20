@@ -17,7 +17,7 @@ impl<P> From<P> for Backtrack<P> {
 
 impl<B, P> ParserCore<B> for Backtrack<P>
 where
-    B: BufRef,
+    B: ?Sized + BufRef,
     P: ParserCore<B>,
 {
     type Output = P::Output;

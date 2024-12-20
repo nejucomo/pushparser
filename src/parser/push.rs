@@ -1,10 +1,11 @@
-use crate::combinator::{Or, Then};
+use crate::buffer::BufRef;
+use crate::combinator::{Optional, Or, Then};
 use crate::parser::ParserCore;
 
 /// The primary composition interface for push parsers
 pub trait PushParser<B>: ParserCore<B>
 where
-    B: ToOwned,
+    B: ?Sized,
 {
     /// Parse `self` then `next` in sequence, yielding `(Self::Output, P::Output)`
     fn then<P>(self, next: P) -> Then<Self, P, B>
@@ -21,4 +22,19 @@ where
     {
         Or::new(self, alternative)
     }
+
+    /// Attempt to parse `self`, or else proceed successfully without consuming anything, yielding `Option<Self::Output>`
+    fn optional(self) -> Optional<Self>
+    where
+        B: BufRef,
+    {
+        Optional::from(self)
+    }
+}
+
+impl<B, P> PushParser<B> for P
+where
+    B: ?Sized,
+    P: ParserCore<B>,
+{
 }

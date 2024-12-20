@@ -11,6 +11,7 @@ pub struct Then<X, Y, B>
 where
     X: ParserCore<B>,
     Y: ParserCore<B>,
+    B: ?Sized,
 {
     xporv: Either<X, X::Output>,
     y: Y,
@@ -21,6 +22,7 @@ impl<X, Y, B> Then<X, Y, B>
 where
     X: ParserCore<B>,
     Y: ParserCore<B>,
+    B: ?Sized,
 {
     /// Create a sequential parser for `x` then `y`
     pub fn new(x: X, y: Y) -> Self {
@@ -38,6 +40,7 @@ impl<X, Y, B> ParserCore<B> for Then<X, Y, B>
 where
     X: ParserCore<B>,
     Y: ParserCore<B>,
+    B: ?Sized,
 {
     type Output = (X::Output, Y::Output);
     type Error = Either<X::Error, Y::Error>;

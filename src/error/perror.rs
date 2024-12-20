@@ -1,5 +1,5 @@
 /// Parser errors include universal errors that any parser may emit, plus custom error types
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq)]
 pub enum ParseError<E> {
     /// The parser encountered unexpected input
     #[error("unexpected input")]

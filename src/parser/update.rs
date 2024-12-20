@@ -1,7 +1,7 @@
 use crate::parser::Outcome;
 
 /// Provides the number of elements consumed and the outcome
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Update<S, X> {
     /// The number of input units consumed
     pub consumed: usize,

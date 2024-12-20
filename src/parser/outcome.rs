@@ -1,5 +1,5 @@
 /// The result of incremental parsing (when an error is not encountered)
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Outcome<S, X> {
     /// The parser updated its state; a full output has not yet been parsed
     Next(S),

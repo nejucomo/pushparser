@@ -1,5 +1,5 @@
 use crate::buffer::BufRef;
-use crate::error::{ParseResult, ParseResultUpdateExt};
+use crate::error::ParseResult;
 use crate::parser::{ParserCore, Update};
 
 /// Collect items emitted from parser `P` into container `C`
@@ -38,20 +38,33 @@ where
             mut collection,
         } = self;
 
-        repeated.feed(buffer).map_outcome(|oc| match oc {
-            Next(repeated) => Next(Collect {
-                repeated,
-                collection,
-            }),
-            Parsed(None) => Parsed(collection),
-            Parsed(Some((repeated, item))) => {
-                collection.extend_one(item);
-                Next(Collect {
-                    repeated,
-                    collection,
-                })
-            }
-        })
+        repeated
+            .feed(buffer)
+            .and_then(|Update { consumed, outcome }| match outcome {
+                Next(repeated) => Ok(Update {
+                    consumed,
+                    outcome: Next(Collect {
+                        repeated,
+                        collection,
+                    }),
+                }),
+                Parsed(None) => Ok(Update {
+                    consumed,
+                    outcome: Parsed(collection),
+                }),
+                Parsed(Some((repeated, item))) => {
+                    collection.extend_one(item);
+                    let intermediate = Collect {
+                        repeated,
+                        collection,
+                    };
+                    let subup = intermediate.feed(buffer.drop_up_to(consumed))?;
+                    Ok(Update {
+                        consumed: consumed + subup.consumed,
+                        outcome: subup.outcome,
+                    })
+                }
+            })
     }
 
     fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
@@ -76,3 +89,6 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

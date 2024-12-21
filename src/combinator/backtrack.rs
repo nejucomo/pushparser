@@ -1,6 +1,6 @@
 use crate::buffer::BufRef;
 use crate::error::ParseResult;
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 
 /// A [Backtrack] parser holds onto all of the input buffer until the inner parser completes
 #[derive(Debug)]
@@ -15,14 +15,23 @@ impl<P> From<P> for Backtrack<P> {
     }
 }
 
-impl<B, P> ParserCore<B> for Backtrack<P>
+impl<P> ParserBase for Backtrack<P>
 where
-    B: ?Sized + BufRef,
-    P: ParserCore<B>,
+    P: ParserBase,
 {
     type Output = P::Output;
     type Error = P::Error;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        self.parser.pending_at_end()
+    }
+}
+
+impl<B, P> PushParser<B> for Backtrack<P>
+where
+    B: ?Sized + BufRef,
+    P: PushParser<B>,
+{
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::{Next, Parsed};
 
@@ -42,9 +51,5 @@ where
                 outcome: Parsed(output),
             }),
         }
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        self.parser.finalize(buffer)
     }
 }

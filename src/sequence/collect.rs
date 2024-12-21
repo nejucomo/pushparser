@@ -1,6 +1,6 @@
 use crate::buffer::BufRef;
 use crate::error::ParseResult;
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 use crate::sequence::SequenceParser;
 
 /// Collect items emitted from [SequenceParser] `P` into container `C`
@@ -22,15 +22,44 @@ where
     }
 }
 
-impl<B, P, C> ParserCore<B> for Collect<P, C>
+impl<P, C> ParserBase for Collect<P, C>
 where
-    B: ?Sized + BufRef,
-    P: SequenceParser<B>,
+    P: SequenceParser,
     C: Extend<P::Item>,
 {
     type Output = C;
     type Error = P::Error;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        // BUG: strongly suspect an API design flaw around this
+        let Collect {
+            repeated,
+            mut collection,
+        } = self;
+
+        if let Some(output) = repeated.pending_at_end() {
+            if let Some((repeated, item)) = output {
+                collection.extend_one(item);
+                let nextself = Collect {
+                    repeated,
+                    collection,
+                };
+                nextself.pending_at_end()
+            } else {
+                Some(collection)
+            }
+        } else {
+            None
+        }
+    }
+}
+
+impl<B, P, C> PushParser<B> for Collect<P, C>
+where
+    B: ?Sized + BufRef,
+    P: SequenceParser + PushParser<B>,
+    C: Extend<P::Item>,
+{
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::{Next, Parsed};
 
@@ -66,28 +95,6 @@ where
                     })
                 }
             })
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        let Collect {
-            repeated,
-            mut collection,
-        } = self;
-
-        if let Some(output) = repeated.finalize(buffer)? {
-            if let Some((repeated, item)) = output {
-                collection.extend_one(item);
-                let nextself = Collect {
-                    repeated,
-                    collection,
-                };
-                nextself.finalize(buffer.drop_up_to(buffer.len()))
-            } else {
-                Ok(Some(collection))
-            }
-        } else {
-            Ok(None)
-        }
     }
 }
 

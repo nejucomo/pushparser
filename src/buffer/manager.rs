@@ -1,8 +1,8 @@
 use crate::error::ParseResult;
 use crate::parser::Outcome;
-use crate::parser::{ParserCore, Update};
+use crate::parser::{PushParser, Update};
 
-/// Manage the buffering necessary for driving [ParserCore] in an i/o agnostic manner
+/// Manage the buffering necessary for driving [PushParser] in an i/o agnostic manner
 #[derive(Debug)]
 pub struct BufferManager {
     buffer: Vec<u8>,
@@ -47,19 +47,15 @@ impl BufferManager {
         readcnt: usize,
     ) -> ParseResult<Outcome<P, P::Output>, P::Error>
     where
-        P: ParserCore<[u8]> + std::fmt::Debug,
-        P::Output: std::fmt::Debug,
-        P::Error: std::fmt::Debug,
+        P: PushParser<[u8]>,
     {
-        use crate::error::ParseError::ExpectedMoreInput;
         use Outcome::Parsed;
 
         let end = self.rstart + readcnt;
         let rslice = &self.buffer[..end];
 
         if readcnt == 0 {
-            let optoutput = parser.finalize(rslice)?;
-            let output = optoutput.ok_or(ExpectedMoreInput)?;
+            let output = parser.end_of_input()?;
             Ok(Parsed(output))
         } else {
             let Update { consumed, outcome } = parser.feed(rslice)?;

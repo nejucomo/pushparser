@@ -1,55 +1,65 @@
-use std::marker::PhantomData;
-
 use either::Either;
 
 use crate::error::{ParseResult, ParseResultExt, ParseResultUpdateExt};
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 
 /// Parse two subgrammars in sequence, `X` then `Y`, yielding both of their outputs
 #[derive(Debug)]
-pub struct Then<X, Y, B>
+pub struct Then<X, Y>
 where
-    X: ParserCore<B>,
-    Y: ParserCore<B>,
-    B: ?Sized,
+    X: ParserBase,
+    Y: ParserBase,
 {
     xporv: Either<X, X::Output>,
     y: Y,
-    ph: PhantomData<B>,
 }
 
-impl<X, Y, B> Then<X, Y, B>
+impl<X, Y> Then<X, Y>
 where
-    X: ParserCore<B>,
-    Y: ParserCore<B>,
-    B: ?Sized,
+    X: ParserBase,
+    Y: ParserBase,
 {
     /// Create a sequential parser for `x` then `y`
     pub fn new(x: X, y: Y) -> Self {
         use Either::Left;
 
-        Then {
-            xporv: Left(x),
-            y,
-            ph: PhantomData,
-        }
+        Then { xporv: Left(x), y }
     }
 }
 
-impl<X, Y, B> ParserCore<B> for Then<X, Y, B>
+impl<X, Y> ParserBase for Then<X, Y>
 where
-    X: ParserCore<B>,
-    Y: ParserCore<B>,
-    B: ?Sized,
+    X: ParserBase,
+    Y: ParserBase,
 {
     type Output = (X::Output, Y::Output);
     type Error = Either<X::Error, Y::Error>;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        let Then { xporv, y } = self;
+
+        let xval = xporv
+            .map_left(|x| x.pending_at_end())
+            .map_right(Some)
+            .into_inner()?;
+
+        let yval = y.pending_at_end()?;
+
+        Some((xval, yval))
+    }
+}
+
+impl<B, X, Y> PushParser<B> for Then<X, Y>
+where
+    X: PushParser<B>,
+    Y: PushParser<B>,
+    B: ?Sized,
+{
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::{Next, Parsed};
         use Either::{Left, Right};
 
-        let Then { xporv, y, ph } = self;
+        let Then { xporv, y } = self;
 
         match xporv {
             Left(xparser) => xparser
@@ -59,12 +69,10 @@ where
                     Next(xparser) => Next(Then {
                         xporv: Left(xparser),
                         y,
-                        ph,
                     }),
                     Parsed(xout) => Next(Then {
                         xporv: Right(xout),
                         y,
-                        ph,
                     }),
                 }),
             Right(xout) => {
@@ -74,34 +82,10 @@ where
                         Next(y) => Next(Then {
                             xporv: Right(xout),
                             y,
-                            ph,
                         }),
                         Parsed(yout) => Parsed((xout, yout)),
                     })
             }
-        }
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        use crate::error::ParseError::ExpectedMoreInput;
-        use Either::{Left, Right};
-
-        let Then { xporv, y, .. } = self;
-
-        let xoutopt = match xporv {
-            Left(xp) => xp.finalize(buffer).map_err_custom(Left)?,
-            Right(xout) => Some(xout),
-        };
-
-        let youtopt = y.finalize(buffer).map_err_custom(Right)?;
-
-        match (xoutopt, youtopt) {
-            // Both finalize to a value, so we finalize to a value:
-            (Some(x), Some(y)) => Ok(Some((x, y))),
-            // X finalized to None, so Y's result is irrelevant:
-            (None, _) => Ok(None),
-            // Because X was a value, a lack of Y value is an error:
-            (Some(_), None) => Err(ExpectedMoreInput),
         }
     }
 }

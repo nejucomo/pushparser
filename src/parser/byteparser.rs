@@ -5,12 +5,12 @@ use either::Either;
 use crate::buffer::BufferManager;
 use crate::error::{ParseResult, ParseResultExt};
 use crate::parser::Outcome::{Next, Parsed};
-use crate::parser::ParserCore;
+use crate::parser::PushParser;
 
 /// A consumer interface that can parse any sync I/O [std::io::Read] type
 ///
-/// Any [ParserCore] with `[u8]` input is a [ByteParser] by blanket impl.
-pub trait ByteParser: ParserCore<[u8]> {
+/// Any [PushParser] with `[u8]` input is a [ByteParser] by blanket impl.
+pub trait ByteParser: PushParser<[u8]> {
     /// Read `r` to end of file and parse it using a buffer with a default size
     fn parse_reader<R, E>(
         self,
@@ -36,7 +36,7 @@ pub trait ByteParser: ParserCore<[u8]> {
 
 impl<T> ByteParser for T
 where
-    T: ParserCore<[u8]> + std::fmt::Debug,
+    T: PushParser<[u8]> + std::fmt::Debug,
     T::Output: std::fmt::Debug,
     T::Error: std::fmt::Debug,
 {

@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use crate::buffer::BufRef;
 use crate::error::{ParseError::UnexpectedInput, ParseResult};
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 
 /// Construct the [End] parser, which only succeeds on an empty end of input
 pub fn end() -> End {
@@ -13,37 +13,30 @@ pub fn end() -> End {
 #[derive(Debug)]
 pub struct End;
 
-impl<B> ParserCore<B> for End
-where
-    B: ?Sized + BufRef,
-{
+impl ParserBase for End {
     type Output = End;
     type Error = Infallible;
 
-    fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
-        use crate::parser::Outcome::Next;
-
-        check_empty(buffer)?;
-        Ok(Update {
-            consumed: 0,
-            outcome: Next(Self),
-        })
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        check_empty(buffer)?;
-        Ok(Some(End))
+    fn pending_at_end(self) -> Option<Self::Output> {
+        Some(End)
     }
 }
 
-fn check_empty<B, E>(buffer: &B) -> ParseResult<(), E>
+impl<B> PushParser<B> for End
 where
     B: ?Sized + BufRef,
 {
-    if buffer.is_empty() {
-        Ok(())
-    } else {
-        Err(UnexpectedInput)
+    fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
+        use crate::parser::Outcome::Next;
+
+        if buffer.is_empty() {
+            Ok(Update {
+                consumed: 0,
+                outcome: Next(Self),
+            })
+        } else {
+            Err(UnexpectedInput)
+        }
     }
 }
 

@@ -10,7 +10,7 @@ pub trait Buffer: AsRef<[u8]> + AsMut<[u8]> {}
 
 /// [BufRef] values have a len of unspecified units and can be empty
 ///
-/// Implementors of [ParserCore::feed](crate::parser::ParserCore::feed) should be aware to handle empty buffers.
+/// Implementors of [PushParser::feed](crate::parser::PushParser::feed) should be aware to handle empty buffers.
 pub trait BufRef: PartialEq {
     /// Whether the buffer contains no items
     fn is_empty(&self) -> bool {

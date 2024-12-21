@@ -1,6 +1,6 @@
 use test_case::test_case;
 
-use crate::parser::ParserCore;
+use crate::parser::PushParser;
 use crate::primitive::end;
 
 #[test_case("" => true)]

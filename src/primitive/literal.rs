@@ -1,9 +1,9 @@
 use std::convert::Infallible;
 
-use crate::error::ParseError::{ExpectedMoreInput, UnexpectedInput};
+use crate::error::ParseError::UnexpectedInput;
 use crate::error::ParseResult;
-use crate::parser::Update;
-use crate::{buffer::BufRef, parser::ParserCore};
+use crate::parser::{ParserBase, Update};
+use crate::{buffer::BufRef, parser::PushParser};
 
 /// Construct a [Literal] which parses input which exactly matches its value
 pub fn literal<B>(value: &B) -> Literal<'_, B>
@@ -44,13 +44,22 @@ where
     }
 }
 
-impl<'s, B> ParserCore<B> for Literal<'s, B>
+impl<'s, B> ParserBase for Literal<'s, B>
 where
-    B: ?Sized + BufRef,
+    B: ?Sized,
 {
     type Output = &'s B;
     type Error = Infallible;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        None
+    }
+}
+
+impl<B> PushParser<B> for Literal<'_, B>
+where
+    B: ?Sized + BufRef,
+{
     fn feed(mut self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::{Next, Parsed};
 
@@ -83,11 +92,6 @@ where
         } else {
             Err(UnexpectedInput)
         }
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        assert!(buffer.is_empty());
-        Err(ExpectedMoreInput)
     }
 }
 

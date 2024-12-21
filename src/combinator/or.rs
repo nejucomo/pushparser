@@ -5,7 +5,7 @@ use either::Either::{self, Left, Right};
 use crate::buffer::BufRef;
 use crate::combinator::Backtrack;
 use crate::error::{ParseResult, ParseResultUpdateExt};
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 
 /// Parse either `X` or `Y` yielding one of their outputs
 #[derive(Debug)]
@@ -24,15 +24,27 @@ impl<X, Y> Or<X, Y> {
     }
 }
 
-impl<B, X, Y> ParserCore<B> for Or<X, Y>
+impl<X, Y> ParserBase for Or<X, Y>
 where
-    X: ParserCore<B>,
-    Y: ParserCore<B>,
-    B: BufRef,
+    X: ParserBase,
+    Y: ParserBase,
 {
     type Output = Either<X::Output, Y::Output>;
     type Error = Y::Error;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        let Or { xbt, y } = self;
+        xbt.and_then(|x| x.pending_at_end().map(Left))
+            .or_else(|| y.pending_at_end().map(Right))
+    }
+}
+
+impl<B, X, Y> PushParser<B> for Or<X, Y>
+where
+    X: PushParser<B>,
+    Y: PushParser<B>,
+    B: BufRef,
+{
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         let Or { xbt, y } = self;
 
@@ -47,16 +59,5 @@ where
         y.feed(buffer)
             .map_next(|y| Or { xbt: None, y })
             .map_output(Right)
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        let Or { xbt, y } = self;
-
-        if let Some(xbt) = xbt {
-            if let Ok(Some(output)) = xbt.finalize(buffer) {
-                return Ok(Some(Left(output)));
-            }
-        }
-        y.finalize(buffer).map(|optval| optval.map(Right))
     }
 }

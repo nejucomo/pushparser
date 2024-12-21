@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use crate::buffer::BufRef;
 use crate::combinator::Backtrack;
 use crate::error::{ParseResult, ParseResultUpdateExt};
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 
 /// Attempt to parse `P`, or else yield `None`
 #[derive(Debug)]
@@ -15,14 +15,23 @@ impl<P> From<P> for Optional<P> {
     }
 }
 
-impl<B, P> ParserCore<B> for Optional<P>
+impl<P> ParserBase for Optional<P>
 where
-    B: ?Sized + BufRef,
-    P: ParserCore<B>,
+    P: ParserBase,
 {
     type Output = Option<P::Output>;
     type Error = Infallible;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        self.0.pending_at_end().map(Some)
+    }
+}
+
+impl<B, P> PushParser<B> for Optional<P>
+where
+    B: ?Sized + BufRef,
+    P: PushParser<B>,
+{
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::Parsed;
 
@@ -35,10 +44,6 @@ where
                 consumed: 0,
                 outcome: Parsed(None),
             }))
-    }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        Ok(self.0.finalize(buffer).unwrap_or(None).map(Some))
     }
 }
 

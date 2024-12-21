@@ -6,7 +6,7 @@ use crate::buffer::BufRef;
 use crate::error::ParseError::UnexpectedInput;
 use crate::error::ParseResult;
 use crate::parser::Outcome::{Next, Parsed};
-use crate::parser::{ParserCore, Update};
+use crate::parser::{PushParser, Update};
 use crate::primitive::{literal, Literal};
 
 #[test_case(

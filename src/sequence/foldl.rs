@@ -1,45 +1,35 @@
 use std::fmt::Debug;
-use std::marker::PhantomData;
 
 use crate::buffer::BufRef;
 use crate::error::ParseResult;
-use crate::parser::{ParserCore, Update};
+use crate::parser::{ParserBase, PushParser, Update};
 use crate::sequence::SequenceParser;
 
 /// Convert a [SequenceParser] into a parser that folds each item into a final output
-pub struct Foldl<S, F, A, B>
+pub struct Foldl<S, F, A>
 where
-    B: ?Sized + BufRef,
-    S: SequenceParser<B>,
+    S: SequenceParser,
     F: Fn(A, S::Item) -> A,
 {
     parser: S,
     acc: A,
     f: F,
-    phantom: PhantomData<(S::Item, B)>,
 }
 
-impl<S, F, A, B> Foldl<S, F, A, B>
+impl<S, F, A> Foldl<S, F, A>
 where
-    B: ?Sized + BufRef,
-    S: SequenceParser<B>,
+    S: SequenceParser,
     F: Fn(A, S::Item) -> A,
 {
     /// Create a new foldl parser
     pub fn new(parser: S, acc: A, f: F) -> Self {
-        Foldl {
-            parser,
-            acc,
-            f,
-            phantom: PhantomData,
-        }
+        Foldl { parser, acc, f }
     }
 }
 
-impl<S, F, A, B> Clone for Foldl<S, F, A, B>
+impl<S, F, A> Clone for Foldl<S, F, A>
 where
-    B: ?Sized + BufRef,
-    S: Clone + SequenceParser<B>,
+    S: Clone + SequenceParser,
     A: Clone,
     F: Clone + Fn(A, S::Item) -> A,
 {
@@ -48,17 +38,37 @@ where
     }
 }
 
-impl<S, F, A, B> ParserCore<B> for Foldl<S, F, A, B>
+impl<S, F, A> ParserBase for Foldl<S, F, A>
 where
-    B: ?Sized + BufRef,
-    S: Debug + SequenceParser<B>,
+    S: SequenceParser,
     F: Fn(A, S::Item) -> A,
-    A: Debug,
-    S::Item: Debug,
 {
     type Output = A;
     type Error = S::Error;
 
+    fn pending_at_end(self) -> Option<Self::Output> {
+        let Foldl { parser, acc, f, .. } = self;
+
+        if let Some(pending) = parser.pending_at_end() {
+            if let Some((p, x)) = pending {
+                Foldl::new(p, f(acc, x), f).pending_at_end()
+            } else {
+                None
+            }
+        } else {
+            Some(acc)
+        }
+    }
+}
+
+impl<B, S, F, A> PushParser<B> for Foldl<S, F, A>
+where
+    B: ?Sized + BufRef,
+    S: Debug + SequenceParser + PushParser<B>,
+    F: Fn(A, S::Item) -> A,
+    A: Debug,
+    S::Item: Debug,
+{
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::{Next, Parsed};
 
@@ -85,21 +95,11 @@ where
                 }
             })
     }
-
-    fn finalize(self, buffer: &B) -> ParseResult<Option<Self::Output>, Self::Error> {
-        let Foldl { parser, acc, f, .. } = self;
-
-        if let Some(Some((p, x))) = parser.finalize(buffer)? {
-            return Foldl::new(p, f(acc, x), f).finalize(buffer.drop_up_to(buffer.len()));
-        }
-        Ok(Some(acc))
-    }
 }
 
-impl<S, F, A, B> Debug for Foldl<S, F, A, B>
+impl<S, F, A> Debug for Foldl<S, F, A>
 where
-    B: ?Sized + BufRef,
-    S: Debug + SequenceParser<B>,
+    S: Debug + SequenceParser,
     F: Fn(A, S::Item) -> A,
     A: Debug,
 {

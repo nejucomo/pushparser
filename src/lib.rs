@@ -12,19 +12,19 @@
 //!
 //! ## Incremental parsing
 //!
-//! Some applications need direct access to incremental parsing, such as in a user interface which is attempting to parse user input as it is written, or those with data sources which don't fit neatly into the [ByteParser] methods. Also, some applications may use different kinds of input such as sequence of application specific tokens and parsers over those. All of these cases need to use [ParserCore] directly:
+//! Some applications need direct access to incremental parsing, such as in a user interface which is attempting to parse user input as it is written, or those with data sources which don't fit neatly into the [ByteParser] methods. Also, some applications may use different kinds of input such as sequence of application specific tokens and parsers over those. All of these cases need to use [PushParser] directly:
 //!
-//! The fundamental incremental parsing functionality comes from two methods, the first of which is [ParserCore::feed]. [ParserCore::feed] produces a [Result] which either signifies a parse error or an [Update]. Updates indicate how many input elements were consumed and whether a [ParserCore::Output] was parsed or the parser has a newly updated state.
+//! The fundamental incremental parsing functionality comes from two methods, the first of which is [PushParser::feed]. [PushParser::feed] produces a [Result] which either signifies a parse error or an [Update]. Updates indicate how many input elements were consumed and whether a [ParserBase::Output] was parsed or the parser has a newly updated state.
 //!
-//! The second funamental parsing method is and [ParserCore::finalize] which signals to the parser no more input is coming. It must either produce a value, or signal a parse error (typically indicating that it expected more input).
+//! The second funamental parsing method is and [ParserBase::end_of_input] which signals to the parser no more input is coming. It must either produce a value, or signal a parse error (typically indicating that it expected more input).
 //!
 //! ### Memory Management
 //!
-//! Consumer code which is using [ParserCore] directly must maintain certain invariants on the input buffer:
+//! Consumer code which is using [PushParser] directly must maintain certain invariants on the input buffer:
 //!
-//! 1. Any items which aren't consumed by a call to [ParserCore::feed] _must remain present starting at index 0_ of the next call to any [ParserCore] method.
-//! 2. Each call to [ParserCore::feed] must have new input items with respect to the previous call. This implies if a buffer is full and [ParserCore::feed] consumes 0 items, the buffer must be extended to a larger size.
-//! 3. When there is no more input, [ParserCore::finalize] must be called a single time on the remaining buffer (which may be empty).
+//! 1. Any items which aren't consumed by a call to [PushParser::feed] _must remain present starting at index 0_ of the next call to any [PushParser] method.
+//! 2. Each call to [PushParser::feed] must have new input items with respect to the previous call. This implies if a buffer is full and [PushParser::feed] consumes 0 items, the buffer must be extended to a larger size.
+//! 3. !!! BUG WRONG !!! FIX THIS When there is no more input, [ParserBase::end_of_input] must be called a single time on the remaining buffer (which may be empty).
 //!
 //! The [BufferManager] type simplifies management of this buffer.
 #![forbid(unsafe_code)]
@@ -41,7 +41,7 @@ pub mod sequence;
 #[cfg(doc)]
 use crate::{
     buffer::BufferManager,
-    parser::{ByteParser, ParserCore, PushParser, TextParser, Update},
+    parser::{ByteParser, ParserBase, PushParser, TextParser, Update},
 };
 
 #[cfg(test)]

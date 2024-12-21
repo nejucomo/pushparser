@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 
 use crate::buffer::BufRef;
-use crate::combinator::{Collect, Optional};
+use crate::combinator::{Collect, Foldl, Optional};
 use crate::error::{ParseResult, ParseResultUpdateExt};
 use crate::parser::{ParserCore, Update};
 
@@ -19,6 +19,16 @@ impl<P> Repeated<P>
 where
     P: Clone,
 {
+    /// Fold each parsed item into an `A` accumulator
+    pub fn foldl<F, A, B>(self, acc: A, f: F) -> Foldl<Repeated<P>, F, A, P::Output, B>
+    where
+        B: ?Sized + BufRef,
+        P: ParserCore<B>,
+        F: Fn(A, P::Output) -> A,
+    {
+        Foldl::new(self, acc, f)
+    }
+
     /// Collect each parsed item into container `C`
     pub fn collect<C>(self) -> Collect<Repeated<P>, C>
     where

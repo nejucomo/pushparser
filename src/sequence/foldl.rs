@@ -6,7 +6,7 @@ use crate::error::ParseResult;
 use crate::parser::{ParserCore, Update};
 use crate::sequence::SequenceParser;
 
-/// Convert the output of parser `P` with fn `F`
+/// Convert a [SequenceParser] into a parser that folds each item into a final output
 pub struct Foldl<S, F, A, B>
 where
     B: ?Sized + BufRef,

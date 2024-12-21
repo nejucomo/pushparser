@@ -3,7 +3,7 @@ use crate::error::ParseResult;
 use crate::parser::{ParserCore, Update};
 use crate::sequence::SequenceParser;
 
-/// Collect items emitted from parser `P` into container `C`
+/// Collect items emitted from [SequenceParser] `P` into container `C`
 #[derive(Debug)]
 pub struct Collect<P, C> {
     repeated: P,

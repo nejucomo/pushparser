@@ -5,7 +5,10 @@ use crate::combinator::Optional;
 use crate::error::{ParseResult, ParseResultUpdateExt};
 use crate::parser::{ParserCore, Update};
 
-/// Parse `P` repeatedly
+#[cfg(doc)]
+use crate::sequence::SequenceParser;
+
+/// Parse `P` repeatedly as a [SequenceParser] with `Item = P::Output`
 #[derive(Debug)]
 pub struct Repeated<P>
 where

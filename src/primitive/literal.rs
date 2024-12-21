@@ -6,7 +6,10 @@ use crate::parser::Update;
 use crate::{buffer::BufRef, parser::ParserCore};
 
 /// Construct a [Literal] which parses input which exactly matches its value
-pub fn literal<B>(value: &B) -> Literal<'_, B> {
+pub fn literal<B>(value: &B) -> Literal<'_, B>
+where
+    B: ?Sized,
+{
     Literal::from(value)
 }
 

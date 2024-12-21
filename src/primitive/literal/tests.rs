@@ -7,7 +7,7 @@ use crate::error::ParseError::UnexpectedInput;
 use crate::error::ParseResult;
 use crate::parser::Outcome::{Next, Parsed};
 use crate::parser::{ParserCore, Update};
-use crate::primitive::Literal;
+use crate::primitive::{literal, Literal};
 
 #[test_case(
     "Hello",
@@ -34,11 +34,11 @@ use crate::primitive::Literal;
     ; "str_hell_prefix_hello"
 )]
 fn parse_literal<'a, B>(
-    literal: &'a B,
+    litval: &'a B,
     input: &'a B,
 ) -> ParseResult<Update<Literal<'a, B>, &'a B>, Infallible>
 where
     B: ?Sized + BufRef,
 {
-    Literal::from(literal).feed(input)
+    literal(litval).feed(input)
 }

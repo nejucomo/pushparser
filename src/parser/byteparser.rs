@@ -9,10 +9,10 @@ use crate::parser::ParserCore;
 
 /// A consumer interface that can parse any sync I/O [std::io::Read] type
 ///
-/// Any [ParserCore] with `[u8]` input is a [ReadParser] by blanket impl.
-pub trait ReadParser: ParserCore<[u8]> {
+/// Any [ParserCore] with `[u8]` input is a [ByteParser] by blanket impl.
+pub trait ByteParser: ParserCore<[u8]> {
     /// Read `r` to end of file and parse it using a buffer with a default size
-    fn read_parse<R, E>(
+    fn parse_reader<R, E>(
         self,
         r: R,
     ) -> ParseResult<Self::Output, Either<Self::Error, std::io::Error>>
@@ -21,11 +21,11 @@ pub trait ReadParser: ParserCore<[u8]> {
     {
         const BUFSIZE: usize = 1 << 16;
 
-        self.read_parse_with_bufsize::<R, E>(r, BUFSIZE)
+        self.parse_reader_with_bufsize::<R, E>(r, BUFSIZE)
     }
 
     /// Read `r` to end of file and parse it using a buffer with the allocated size
-    fn read_parse_with_bufsize<R, E>(
+    fn parse_reader_with_bufsize<R, E>(
         self,
         r: R,
         bufsize: usize,
@@ -34,13 +34,13 @@ pub trait ReadParser: ParserCore<[u8]> {
         R: Read;
 }
 
-impl<T> ReadParser for T
+impl<T> ByteParser for T
 where
     T: ParserCore<[u8]> + std::fmt::Debug,
     T::Output: std::fmt::Debug,
     T::Error: std::fmt::Debug,
 {
-    fn read_parse_with_bufsize<R, E>(
+    fn parse_reader_with_bufsize<R, E>(
         self,
         mut r: R,
         bufsize: usize,

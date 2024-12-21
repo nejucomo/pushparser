@@ -13,6 +13,7 @@ pub mod combinator;
 pub mod error;
 pub mod parser;
 pub mod primitive;
+pub mod sequence;
 
 #[cfg(doc)]
 use crate::parser::{ParserCore, PushParser, ReadParser, Update};

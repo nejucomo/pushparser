@@ -4,28 +4,29 @@ use std::marker::PhantomData;
 use crate::buffer::BufRef;
 use crate::error::ParseResult;
 use crate::parser::{ParserCore, Update};
+use crate::sequence::SequenceParser;
 
 /// Convert the output of parser `P` with fn `F`
-pub struct Foldl<P, F, A, X, B>
+pub struct Foldl<S, F, A, B>
 where
     B: ?Sized + BufRef,
-    P: ParserCore<B, Output = Option<(P, X)>>,
-    F: Fn(A, X) -> A,
+    S: SequenceParser<B>,
+    F: Fn(A, S::Item) -> A,
 {
-    parser: P,
+    parser: S,
     acc: A,
     f: F,
-    phantom: PhantomData<(X, B)>,
+    phantom: PhantomData<(S::Item, B)>,
 }
 
-impl<P, F, A, X, B> Foldl<P, F, A, X, B>
+impl<S, F, A, B> Foldl<S, F, A, B>
 where
     B: ?Sized + BufRef,
-    P: ParserCore<B, Output = Option<(P, X)>>,
-    F: Fn(A, X) -> A,
+    S: SequenceParser<B>,
+    F: Fn(A, S::Item) -> A,
 {
     /// Create a new foldl parser
-    pub fn new(parser: P, acc: A, f: F) -> Self {
+    pub fn new(parser: S, acc: A, f: F) -> Self {
         Foldl {
             parser,
             acc,
@@ -35,28 +36,28 @@ where
     }
 }
 
-impl<P, F, A, X, B> Clone for Foldl<P, F, A, X, B>
+impl<S, F, A, B> Clone for Foldl<S, F, A, B>
 where
     B: ?Sized + BufRef,
-    P: Clone + ParserCore<B, Output = Option<(P, X)>>,
+    S: Clone + SequenceParser<B>,
     A: Clone,
-    F: Clone + Fn(A, X) -> A,
+    F: Clone + Fn(A, S::Item) -> A,
 {
     fn clone(&self) -> Self {
         Foldl::new(self.parser.clone(), self.acc.clone(), self.f.clone())
     }
 }
 
-impl<P, F, A, X, B> ParserCore<B> for Foldl<P, F, A, X, B>
+impl<S, F, A, B> ParserCore<B> for Foldl<S, F, A, B>
 where
     B: ?Sized + BufRef,
-    P: Debug + ParserCore<B, Output = Option<(P, X)>>,
-    F: Fn(A, X) -> A,
+    S: Debug + SequenceParser<B>,
+    F: Fn(A, S::Item) -> A,
     A: Debug,
-    X: Debug,
+    S::Item: Debug,
 {
     type Output = A;
-    type Error = P::Error;
+    type Error = S::Error;
 
     fn feed(self, buffer: &B) -> ParseResult<Update<Self, Self::Output>, Self::Error> {
         use crate::parser::Outcome::{Next, Parsed};
@@ -95,11 +96,11 @@ where
     }
 }
 
-impl<P, F, A, X, B> Debug for Foldl<P, F, A, X, B>
+impl<S, F, A, B> Debug for Foldl<S, F, A, B>
 where
     B: ?Sized + BufRef,
-    P: Debug + ParserCore<B, Output = Option<(P, X)>>,
-    F: Fn(A, X) -> A,
+    S: Debug + SequenceParser<B>,
+    F: Fn(A, S::Item) -> A,
     A: Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

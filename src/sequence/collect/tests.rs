@@ -7,6 +7,7 @@ use crate::error::{ParseResult, ParseResultUpdateExt};
 use crate::parser::Outcome::{Next, Parsed};
 use crate::parser::{ParserCore, PushParser, Update};
 use crate::primitive::Literal;
+use crate::sequence::SequenceParser;
 
 #[test_case(
     "Hello",

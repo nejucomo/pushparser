@@ -1,6 +1,7 @@
 use crate::buffer::BufRef;
 use crate::error::ParseResult;
 use crate::parser::{ParserCore, Update};
+use crate::sequence::SequenceParser;
 
 /// Collect items emitted from parser `P` into container `C`
 #[derive(Debug)]
@@ -21,11 +22,11 @@ where
     }
 }
 
-impl<B, P, C, X> ParserCore<B> for Collect<P, C>
+impl<B, P, C> ParserCore<B> for Collect<P, C>
 where
     B: ?Sized + BufRef,
-    P: ParserCore<B, Output = Option<(P, X)>>,
-    C: Default + Extend<X>,
+    P: SequenceParser<B>,
+    C: Extend<P::Item>,
 {
     type Output = C;
     type Error = P::Error;
